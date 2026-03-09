@@ -29,8 +29,7 @@ const productService = {
         price: productData.price,
         gstRate: productData.gst, // Note: backend uses gstRate
         description: productData.description || '',
-        // hsn field illa - backend model la description dhan irukku
-        company: productData.company || null
+
       });
       return response.data; // { message: "Product created successfully", product }
     } catch (error) {
@@ -46,7 +45,7 @@ const productService = {
         price: productData.price,
         gstRate: productData.gst,
         description: productData.description || '',
-        company: productData.company || null
+
       });
       return response.data; // { message: "Product updated successfully", product }
     } catch (error) {
