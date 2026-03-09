@@ -1,24 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import dashboardService from '../services/dashboardService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      totalCustomers: 0,
+      totalProducts: 0,
+      totalInvoices: 0,
+      totalRevenue: 0
+    },
+    recentInvoices: []
+  });
 
-  // Dummy data - API call pannanum
-  const stats = [
-    { title: 'Total Customers', value: '24', icon: '👥', color: 'bg-blue-500' },
-    { title: 'Total Products', value: '45', icon: '📦', color: 'bg-green-500' },
-    { title: 'Total Invoices', value: '89', icon: '📄', color: 'bg-purple-500' },
-    { title: 'Total Revenue', value: '₹1,24,500', icon: '💰', color: 'bg-orange-500' },
-  ];
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const recentInvoices = [
-    { id: 1, no: 'INV-001', customer: 'Raja Kumar', date: '2026-03-01', amount: '₹5,200', status: 'Paid' },
-    { id: 2, no: 'INV-002', customer: 'Priya Sharma', date: '2026-03-02', amount: '₹3,800', status: 'Unpaid' },
-    { id: 3, no: 'INV-003', customer: 'Arun Raj', date: '2026-03-03', amount: '₹7,500', status: 'Paid' },
-    { id: 4, no: 'INV-004', customer: 'Meena Devi', date: '2026-03-04', amount: '₹2,100', status: 'Paid' },
-    { id: 5, no: 'INV-005', customer: 'Suresh Kumar', date: '2026-03-05', amount: '₹9,300', status: 'Unpaid' },
-  ];
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await dashboardService.getDashboardStats();
+      setDashboardData(data);
+    } catch (err) {
+      setError(err.message || 'Failed to load dashboard data');
+      console.error('Error fetching dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Stats cards configuration
+  const getStatsCards = () => {
+    const { totalCustomers, totalProducts, totalInvoices, totalRevenue } = dashboardData.stats;
+    
+    return [
+      { 
+        title: 'Total Customers', 
+        value: totalCustomers, 
+        icon: '👥', 
+        color: 'bg-blue-500' 
+      },
+      { 
+        title: 'Total Products', 
+        value: totalProducts, 
+        icon: '📦', 
+        color: 'bg-green-500' 
+      },
+      { 
+        title: 'Total Invoices', 
+        value: totalInvoices, 
+        icon: '📄', 
+        color: 'bg-purple-500' 
+      },
+      { 
+        title: 'Total Revenue', 
+        value: dashboardService.formatCurrency(totalRevenue), 
+        icon: '💰', 
+        color: 'bg-orange-500' 
+      },
+    ];
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-10">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+        <p className="mt-2 text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg inline-block">
+          {error}
+        </div>
+        <div className="mt-4">
+          <button
+            onClick={fetchDashboardData}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const statsCards = getStatsCards();
 
   return (
     <div>
@@ -26,7 +102,7 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -53,47 +129,49 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 text-gray-600 font-medium">Invoice #</th>
-                <th className="text-left py-3 text-gray-600 font-medium">Customer</th>
-                <th className="text-left py-3 text-gray-600 font-medium">Date</th>
-                <th className="text-left py-3 text-gray-600 font-medium">Amount</th>
-                <th className="text-left py-3 text-gray-600 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentInvoices.map((inv) => (
-                <tr key={inv.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 text-gray-800">{inv.no}</td>
-                  <td className="py-3 text-gray-800">{inv.customer}</td>
-                  <td className="py-3 text-gray-800">{inv.date}</td>
-                  <td className="py-3 text-gray-800">{inv.amount}</td>
-                  <td className="py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      inv.status === 'Paid' 
-                        ? 'bg-green-100 text-green-600' 
-                        : 'bg-yellow-100 text-yellow-600'
-                    }`}>
-                      {inv.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {dashboardData.recentInvoices.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">No recent invoices found</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 text-gray-600 font-medium">Invoice #</th>
+                    <th className="text-left py-3 text-gray-600 font-medium">Customer</th>
+                    <th className="text-left py-3 text-gray-600 font-medium">Date</th>
+                    <th className="text-left py-3 text-gray-600 font-medium">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardData.recentInvoices.map((invoice) => (
+                    <tr 
+                      key={invoice._id} 
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={() => navigate(`/invoices/${invoice._id}`)}
+                    >
+                      <td className="py-3 text-gray-800 font-medium">{invoice.invoiceNumber}</td>
+                      <td className="py-3 text-gray-800">{invoice.customer?.name || 'N/A'}</td>
+                      <td className="py-3 text-gray-600">{dashboardService.formatDate(invoice.createdAt)}</td>
+                      <td className="py-3 text-gray-800 font-medium">
+                        {dashboardService.formatCurrency(invoice.totalAmount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => navigate('/invoices')}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            View All Invoices →
-          </button>
-        </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => navigate('/invoices')}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                View All Invoices →
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
